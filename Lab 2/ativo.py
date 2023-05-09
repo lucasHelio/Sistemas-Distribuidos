@@ -32,101 +32,98 @@ def arquivoLeitura():
     return
 
 
-def switchFunc(entrada, adm):
-    str_bytes = entrada.encode("ascii")
-    sock.send(str_bytes)
+def switchFunc(entrada, adm, socket):
+    enviaMensagem(entrada, socket) #escolha que o usuario fez
+    
     if entrada == "0" and adm =="1":
-        msgServ = sock.recv(1024) #aguarda a prox instrucao
-        x= input(str(msgServ,  encoding='utf-8'))
-        str_bytes = x.encode("ascii")
-        sock.send(str_bytes)
-        msgServ = sock.recv(1024) #aguarda saber se a chave foi removida
-        print(str(msgServ,  encoding='utf-8'))
+        msg = recebeMensagem(socket) #pergunta do serv
+        x= input(msg)
+        enviaMensagem(x, socket) #envia resposta
+        
+        msgServ = recebeMensagem(socket) #aguarda saber se a chave foi removida
+        print(msgServ)
         return
+    
     elif entrada == "1":
-        print("\n")
-        msg = sock.recv(1024)
-        x = msg.decode()
+        x = recebeMensagem(socket)
         y = x.split("*")
+        
         for palavra in y:
             print(palavra)
 
-        sock.send(b"msg chegou")
-        print("\n")  
+        #sock.send(b"msg chegou")  
         return
         
     elif entrada == "2":
-        msgServ = sock.recv(1024) #aguarda a prox instrucao
-        x= input(str(msgServ,  encoding='utf-8'))
-        str_bytes = x.encode("ascii")
-        sock.send(str_bytes)
-
-        msg = sock.recv(1024)
-        print(str(msg, "utf-8"))
-        print("\n")
-        
+        msgServ = recebeMensagem(socket) #pergunta do serv
+        chave= input(msgServ)
+        enviaMensagem(chave, socket) #resposta
+        msg =recebeMensagem(sock)
+        print(msg)        
         return
     
     elif entrada == "3":
-        msgServ = sock.recv(1024) #aguarda a prox instrucao
-        x= input(str(msgServ, 'utf-8'))
-        str_bytes = x.encode("ascii")
-        sock.send(str_bytes)
+        msgServ = recebeMensagem(socket) #chave
+        chave = input(msgServ)
+        enviaMensagem(chave, socket)
 
-        msgServ = sock.recv(1024) #aguarda a prox instrucao
-        x= input(str(msgServ, 'utf-8'))
-        str_bytes = x.encode("ascii")
-        sock.send(str_bytes)
+        msgServ = recebeMensagem(socket)
+        definicao= input(msgServ)
 
-        msgServ = sock.recv(1024) #aguarda o retorno da funcao
-        print(str(msgServ, 'utf-8'))
+        enviaMensagem(definicao, socket)
+
+        msgServ = recebeMensagem(socket) #aguarda o retorno da funcao
+        print(msgServ)
         return
+    
     elif entrada == "4":
-        msgServ = sock.recv(1024) #aguarda a prox instrucao
-        x= input(str(msgServ, 'utf-8'))#chave
-        str_bytes = x.encode("ascii")
-        sock.send(str_bytes)#envia chave
+        msgServ = recebeMensagem(socket)
+        x= input(msgServ)#chave
+        enviaMensagem(x, socket)#envia chave
 
-        msg = sock.recv(1024)
-        x = (str(msg))
+        
+        x = recebeMensagem(socket)
         if x == "1":
 
-            msg = sock.recv(1024)   #recebe definicoes
-            x = msg.decode()
-            y = x.split("*")
-            for palavra in y:
-                print(palavra)
+            lista = recebeMensagem(socket)   #recebe definicoes
+            #x = msg.decode()
+            #y = x.split("*")
+            #print("oi to aqui")
+            #for palavra in y:
+            #    print(palavra)
+            print(lista)
 
             #sock.send(b'mensagem recebida')
             print("\n")
 
-            msgServ = sock.recv(1024) #aguarda a instrucao de escolher a definicao
-            #t= input(str(msgServ, 'utf-8'))
-            t= input(str(msgServ))
-            print("passei pelo input")
-            str_bytes = x.encode("ascii")
-            sock.send(str_bytes)
+            chave = input("escolha uma definicao para alterar: ")
 
-        msgServ = sock.recv(1024) #aguarda a prox instrucao
-        print(str(msgServ, 'utf-8'))
+            enviaMensagem(chave, socket)
+            #se achou a chave
+            b = recebeMensagem(socket)
+            if b =="1":
+                definicao = input("Digite a nova Definicao: ")
+                enviaMensagem(definicao, socket)
+        
+        msgServ = recebeMensagem(sock)
+        print(msgServ)
         return
+    
     elif entrada == "5":
-        msgServ = sock.recv(1024) #aguarda a prox instrucao
-        x= input(str(msgServ, 'utf-8'))
-        str_bytes = x.encode("ascii")
-        sock.send(str_bytes)
+        msgServ = recebeMensagem(socket) #aguarda a prox instrucao
+        x= input(msgServ)
+        enviaMensagem(x, socket)
 
-        msg = sock.recv(1024)
-        x = (str(msg, "utf-8"))
-        if x == "1":
-            msgServ = sock.recv(1024) #aguarda a prox instrucao
-            x= input(str(msgServ, 'utf-8'))
-            str_bytes = x.encode("ascii")
-            sock.send(str_bytes)
+        
+        b = recebeMensagem(socket)
+        if b == "1":
+            definicao= input("escreva uma nova definicao: ")
+            enviaMensagem(definicao, socket)
 
-        msgServ = sock.recv(1024) #aguarda a confirmacao do serv
-        print(str(msgServ, 'utf-8'))
+        msgServ = recebeMensagem(sock) #aguarda a confirmacao do serv
+        print(msgServ)
         return
+    
     elif entrada == "6":
         arquivoLeitura()
         print("Arquivo restaurado")
@@ -158,6 +155,64 @@ def encontraChave(chave):
         if chave == x.chave:
             return x
     return 0
+
+def enviaMensagem(input, socket):
+    str_bytes = input.encode("ascii")
+    tam = len(str_bytes)
+    byt = tam.to_bytes(1, 'big')
+    total = 0
+    socket.send(byt) #envia tamanho da mensagem
+
+    while total < tam:
+        enviado = socket.send(str_bytes[total:]) #envia mensagem
+        if enviado ==0:
+            #retorna com erro
+            return -1
+            
+        total = total+ enviado 
+    #socket.sendall(str_bytes)
+    return
+
+"""def recebeMensagem(recebeSock):
+    tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
+    tam = int.from_bytes(tamMsg, 'big')
+    full_msg =""
+    while True:
+        message = sock.recv(tam)
+        if len(message)==0:
+            break
+        full_msg += message.decode()
+    return full_msg"""
+
+def recebeMensagem(recebeSock):
+    tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
+    tam = int.from_bytes(tamMsg, 'big')
+    recebidos = 0
+    chunks = []
+    while recebidos < tam:
+        chunk = sock.recv(min(tam-recebidos, 2048))
+        if not chunk:
+            return -1
+        chunks.append(chunk)
+        recebidos = recebidos + len(chunk)
+    y = str(b''.join(chunks), 'utf-8')
+    return y
+
+"""def recebeMensagem(recebeSock):
+    tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
+    tam = int.from_bytes(tamMsg, 'big')
+    msgRec = recebeSock.recv(tam) #le mensagem de tamanho tam
+    msg = str(msgRec, 'utf-8')
+    return msg"""
+
+""" def enviaMensagem(input, socket):
+    str_bytes = input.encode("ascii")
+    tam = len(str_bytes)
+    byt = tam.to_bytes(1, 'big')
+    socket.send(byt) #envia tamanho da mensagem
+    socket.send(str_bytes) #envia mensagem
+    return """
+
 #----------------------------------------------------------------
 
 HOST = 'localhost' # maquina onde esta o par passivo
@@ -181,35 +236,33 @@ print("\t\t\tEntre com sua conta!")
 
 login = input('\n\t\t\tLogin: ')
 senha = input('\t\t\tsenha: ')
-str_bytes1 = login.encode("ascii")
-str_bytes2 = senha.encode("ascii")
 
-sock.send(str_bytes1)
-sock.send(str_bytes2)
+enviaMensagem(login, sock)
+enviaMensagem(senha, sock)
 
 #--------------------------------------------
 
-msg = sock.recv(1024) #guarda para saber se eh adm
-adm =(str(msg, 'utf-8'))
+adm = recebeMensagem(sock) #guarda para saber se eh adm
 
 
-msg = sock.recv(1024) #aguarda boas vindas
-print(str(msg,  encoding='utf-8'))
+msg = recebeMensagem(sock) #aguarda boas vindas
+print(msg)
 
 
 while True:
 
-    msg = sock.recv(1024) #recebe uma main
-    print(str(msg,  encoding='utf-8'))
+    #msg = sock.recv(1024) #recebe uma main
+    menu = recebeMensagem(sock) #recebe menu
+
+    print(menu)
 
     entrada = input("Digite um comando: ")
-    
+        
+    switchFunc(entrada,adm, sock)
     
     if entrada == "7": #sair...
         sock.close()
         break
-        
-    switchFunc(entrada,adm)
     
 
 
