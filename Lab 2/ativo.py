@@ -11,7 +11,7 @@ class Palavra:
 
 
 def arquivoEscrita():
-    Arquivo = open("teste.txt","w")
+    Arquivo = open("dicionario.txt","w")
     for x in Dicionario:
         Arquivo.write(str(x.chave))
         for y in x.valores:
@@ -22,7 +22,7 @@ def arquivoEscrita():
     return
 
 def arquivoLeitura():
-    Arquivo = open("teste.txt", "r")
+    Arquivo = open("dicionario.txt", "r")
 
     x = Arquivo.read().splitlines()
     for a in x:
@@ -47,7 +47,7 @@ def switchFunc(entrada, adm, socket):
     elif entrada == "1":
         x = recebeMensagem(socket)
         y = x.split("*")
-        
+        y = sorted(y)
         for palavra in y:
             print(palavra)
 
@@ -86,14 +86,8 @@ def switchFunc(entrada, adm, socket):
         if x == "1":
 
             lista = recebeMensagem(socket)   #recebe definicoes
-            #x = msg.decode()
-            #y = x.split("*")
-            #print("oi to aqui")
-            #for palavra in y:
-            #    print(palavra)
+            
             print(lista)
-
-            #sock.send(b'mensagem recebida')
             print("\n")
 
             chave = input("escolha uma definicao para alterar: ")
@@ -123,16 +117,8 @@ def switchFunc(entrada, adm, socket):
         msgServ = recebeMensagem(sock) #aguarda a confirmacao do serv
         print(msgServ)
         return
-    
-    elif entrada == "6":
-        arquivoLeitura()
-        print("Arquivo restaurado")
-        return
         
-    elif entrada == "7":
-        arquivoEscrita()
-        #global prog
-        #prog = 0
+    elif entrada == "6":
         return
         
     else:
@@ -170,19 +156,8 @@ def enviaMensagem(input, socket):
             return -1
             
         total = total+ enviado 
-    #socket.sendall(str_bytes)
     return
 
-"""def recebeMensagem(recebeSock):
-    tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
-    tam = int.from_bytes(tamMsg, 'big')
-    full_msg =""
-    while True:
-        message = sock.recv(tam)
-        if len(message)==0:
-            break
-        full_msg += message.decode()
-    return full_msg"""
 
 def recebeMensagem(recebeSock):
     tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
@@ -198,20 +173,7 @@ def recebeMensagem(recebeSock):
     y = str(b''.join(chunks), 'utf-8')
     return y
 
-"""def recebeMensagem(recebeSock):
-    tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
-    tam = int.from_bytes(tamMsg, 'big')
-    msgRec = recebeSock.recv(tam) #le mensagem de tamanho tam
-    msg = str(msgRec, 'utf-8')
-    return msg"""
 
-""" def enviaMensagem(input, socket):
-    str_bytes = input.encode("ascii")
-    tam = len(str_bytes)
-    byt = tam.to_bytes(1, 'big')
-    socket.send(byt) #envia tamanho da mensagem
-    socket.send(str_bytes) #envia mensagem
-    return """
 
 #----------------------------------------------------------------
 
@@ -251,7 +213,6 @@ print(msg)
 
 while True:
 
-    #msg = sock.recv(1024) #recebe uma main
     menu = recebeMensagem(sock) #recebe menu
 
     print(menu)
@@ -260,8 +221,7 @@ while True:
         
     switchFunc(entrada,adm, sock)
     
-    if entrada == "7": #sair...
-        sock.close()
+    if entrada == "6": #sair...
         break
     
 
