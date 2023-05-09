@@ -231,7 +231,7 @@ def switchAdm(x, socket):
         return
 
 
-def switchUsuario(x):
+def switchUsuario(x, socket):
     if x == "1":
         listaPalavras(socket)
         #msg = novoSock.recv(1024) # tentando evitar o deadlock
