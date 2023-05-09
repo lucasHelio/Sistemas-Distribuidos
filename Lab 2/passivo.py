@@ -119,7 +119,6 @@ def removeChave(chave, socket):
 def alteraValorChave(chave, socket):
     Obj = encontraChave(chave)
     if Obj:
-        #novoSock.send(b"1")# encontrou o obj
         enviaMensagem("1", socket) # encontrou o obj
         y=''
         for x in Obj.valores:
@@ -127,16 +126,15 @@ def alteraValorChave(chave, socket):
 
         enviaMensagem(y, socket)
 
-        #msg = novoSock.recv(1024) # confirma o recebimento da mensagem anterior
 
         chave = recebeMensagem(socket)
         
         # se a chave n existir? if chave
-        if Obj.valores[chave] != "":
+        if Obj.valores[int(chave)] != "":
             enviaMensagem("1", socket) #achou a definicao
             novaDefinicao = recebeMensagem(socket)
-            Obj.valores.pop(int(y))
-            Obj.valores.insert(int(y), novaDefinicao)
+            Obj.valores.pop(int(chave))
+            Obj.valores.insert(int(chave), novaDefinicao)
             msg = "A definicao foi alterada "
             enviaMensagem(msg, socket)
         else:
@@ -178,7 +176,6 @@ def switchAdm(x, socket):
         return
     elif x == "1":
         listaPalavras(socket)
-        #msg = novoSock.recv(1024) # tentando evitar o deadlock
         return 
     elif x == "2":
         
@@ -215,16 +212,8 @@ def switchAdm(x, socket):
         adicionaValor(chave, socket)
         return
     elif x == "6": #dar uma olhada nisso dps
-        #arquivoLeitura()
-        #print("Arquivo restaurado")
-        #return
         pass
-    elif x == "7":
-        #arquivoEscrita()
-        #global prog
-        #prog = 0
-        #return
-        pass
+        
     else:
         #print (colored("comando nao reconhecido", 'red'))
         print ("\ncomando nao reconhecido\n")
@@ -271,33 +260,15 @@ def switchUsuario(x, socket):
         adicionaValor(chave, socket)
         return
     elif x == "6": #dar uma olhada nisso dps
-        #arquivoLeitura()
-        #print("Arquivo restaurado")
-        #return
         pass
-    elif x == "7":
-        #arquivoEscrita()
-        #global prog
-        #prog = 0
-        #return
-        pass
+
     else:
-        #print (colored("comando nao reconhecido", 'red'))
         print ("\ncomando nao reconhecido\n")
         return    
 
 prog = 1
 
-""" def recebeMensagem(recebeSock):
-    tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
-    tam = int.from_bytes(tamMsg, 'big')
-    full_msg =""
-    while True:
-        message = recebeSock.recv(tam)
-        if len(message)==0:
-            break
-        full_msg += message.decode()
-    return full_msg """
+
 
 def recebeMensagem(recebeSock):
     tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
@@ -332,39 +303,26 @@ def enviaMensagem(input, socket):
     #socket.sendall(str_bytes)
     return
 
-"""def recebeMensagem(recebeSock):
-    tamMsg = recebeSock.recv(1) #recebe tamanho da mensagem
-    tam = int.from_bytes(tamMsg, 'big')
-    msgRec = recebeSock.recv(tam) #le mensagem de tamanho tam
-    msg = str(msgRec, 'utf-8')
-    return msg"""
 
-""" def enviaMensagem(input, socket):
-    str_bytes = input.encode("ascii")
-    tam = len(str_bytes)
-    byt = tam.to_bytes(1, 'big')
-    socket.send(byt) #envia tamanho da mensagem
-    socket.send(str_bytes) #envia mensagem
-    return """
 
 
 def atendeRequisicoes(clisock, endr):
 	#'''Recebe mensagens e as envia de volta para o cliente (ate o cliente finalizar)
 	#Entrada: socket da conexao e endereco do cliente
 	#Saida: '''
-    print("cheguei nas requisicoes")
+
 	#--------------------------- espera o login ----------------------
     login = recebeMensagem(clisock)
     senha = recebeMensagem(clisock)
     
-    print('recebi login e senha')
+    
     if login == "adm" and senha == "123":
         enviaMensagem("1", clisock)# eh adm
         enviaMensagem("\n\t\t\t\tBem vindo ADM!\n", clisock)
-        
+        print('Adm loggin')
         
         while True:
-            msg = '\t\t\tADM o que gostaria de fazer?\n\n\t\t\t0 - Remover uma palavra\n\t\t\t1 - listar todas as palavras\n\t\t\t2 - Buscar uma palavra\n\t\t\t3 - Inserir uma palavra\n\t\t\t4 - Alterar uma definicao\n\t\t\t5 - Adicionar uma definicao\n\t\t\t6 - Restaurar sessao\n\t\t\t7 - Sair\n'
+            msg = '\t\t\tADM o que gostaria de fazer?\n\n\t\t\t0 - Remover uma palavra\n\t\t\t1 - listar todas as palavras\n\t\t\t2 - Buscar uma palavra\n\t\t\t3 - Inserir uma palavra\n\t\t\t4 - Alterar uma definicao\n\t\t\t5 - Adicionar uma definicao\n\t\t\t6 - Sair\n'
             enviaMensagem(msg, clisock)
             entrada = recebeMensagem(clisock)
             if not entrada: # dados vazios: cliente encerrou
@@ -381,9 +339,9 @@ def atendeRequisicoes(clisock, endr):
     else:
         enviaMensagem("0", clisock)#eh usuario
         enviaMensagem("\n\t\t\t\tBem vindo Usuario!\n", clisock)
-
+        print('Usuario loggin')
         while True:
-            msg = "\t\t\to que gostaria de fazer?\n\n\t\t\t1 - listar todas as palavras\n\t\t\t2 - Buscar uma palavra\n\t\t\t3 - Inserir uma palavra\n\t\t\t4 - Alterar uma definicao\n\t\t\t5 - Adicionar uma definicao\n\t\t\t6 - Restaurar sessao\n\t\t\t7 - Sair\n"
+            msg = "\t\t\to que gostaria de fazer?\n\n\t\t\t1 - listar todas as palavras\n\t\t\t2 - Buscar uma palavra\n\t\t\t3 - Inserir uma palavra\n\t\t\t4 - Alterar uma definicao\n\t\t\t5 - Adicionar uma definicao\n\t\t\t6 - Sair\n"
             enviaMensagem(msg, clisock)
             entrada = recebeMensagem(clisock)
 
@@ -396,10 +354,33 @@ def atendeRequisicoes(clisock, endr):
                 return 
             switchUsuario(entrada, clisock)
 
+def arquivoEscrita():
+    Arquivo = open("dicionario.txt","w")
+    for x in Dicionario:
+        Arquivo.write(str(x.chave))
+        for y in x.valores:
+            Arquivo.write("*"+ str(y))
+        Arquivo.write("\n")
+            
+    Arquivo.close()
+    return
+
+def arquivoLeitura():
+    Arquivo = open("dicionario.txt", "r")
+
+    x = Arquivo.read().splitlines()
+    for a in x:
+        i = a.split('*')
+        adicionaChave(i[0], i[1:])
+    Arquivo.close()
+    return
+
+
 def main():
 	'''Inicializa e implementa o loop principal (infinito) do servidor'''
 	sock = iniciaServidor()
 	print("Pronto para receber conexoes...")
+	arquivoLeitura()
 	while True:
 		#espera por qualquer entrada de interesse
 		leitura, escrita, excecao = select.select(entradas, [], [])
@@ -415,6 +396,7 @@ def main():
 				cmd = input()
 				if cmd == 'fim': #solicitacao de finalizacao do servidor
 					if not conexoes: #somente termina quando nao houver clientes ativos
+						arquivoEscrita()
 						sock.close()
 						sys.exit()
 					else: print("ha conexoes ativas")
