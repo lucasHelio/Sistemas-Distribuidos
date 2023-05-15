@@ -218,11 +218,13 @@ while True:
     print(menu)
 
     entrada = input("Digite um comando: ")
-        
-    switchFunc(entrada,adm, sock)
     
     if entrada == "6": #sair...
         break
+        
+    switchFunc(entrada,adm, sock)
+    
+    
     
 
 
