@@ -319,7 +319,7 @@ def atendeRequisicoes(clisock, endr):
     if login == "adm" and senha == "123":
         enviaMensagem("1", clisock)# eh adm
         enviaMensagem("\n\t\t\t\tBem vindo ADM!\n", clisock)
-        print('Adm loggin')
+        print('Adm loggin ->', endr)
         
         while True:
             msg = '\t\t\tADM o que gostaria de fazer?\n\n\t\t\t0 - Remover uma palavra\n\t\t\t1 - listar todas as palavras\n\t\t\t2 - Buscar uma palavra\n\t\t\t3 - Inserir uma palavra\n\t\t\t4 - Alterar uma definicao\n\t\t\t5 - Adicionar uma definicao\n\t\t\t6 - Sair\n'
@@ -339,7 +339,7 @@ def atendeRequisicoes(clisock, endr):
     else:
         enviaMensagem("0", clisock)#eh usuario
         enviaMensagem("\n\t\t\t\tBem vindo Usuario!\n", clisock)
-        print('Usuario loggin')
+        print('Usuario loggin ->', endr)
         while True:
             msg = "\t\t\to que gostaria de fazer?\n\n\t\t\t1 - listar todas as palavras\n\t\t\t2 - Buscar uma palavra\n\t\t\t3 - Inserir uma palavra\n\t\t\t4 - Alterar uma definicao\n\t\t\t5 - Adicionar uma definicao\n\t\t\t6 - Sair\n"
             enviaMensagem(msg, clisock)
@@ -366,7 +366,7 @@ def arquivoEscrita():
     return
 
 def arquivoLeitura():
-    Arquivo = open("dicionario.txt", "r")
+    Arquivo = open("dicionario.txt", "a+")
 
     x = Arquivo.read().splitlines()
     for a in x:
