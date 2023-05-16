@@ -92,6 +92,13 @@ def printaChave(chave, socket):
     enviaMensagem(msg, socket)
     return
 
+def adicionaChaveServidor(chave, valor):
+    if not encontraChave(chave):
+        Dicionario.append(Palavra(chave, valor))   
+        return
+    else:
+        return
+
 def adicionaChave(chave, valor, socket):
     if not encontraChave(chave):
         Dicionario.append(Palavra(chave, valor))   
@@ -366,12 +373,12 @@ def arquivoEscrita():
     return
 
 def arquivoLeitura():
-    Arquivo = open("dicionario.txt", "a+")
+    Arquivo = open("dicionario.txt", "r+")
 
     x = Arquivo.read().splitlines()
     for a in x:
         i = a.split('*')
-        adicionaChave(i[0], i[1:])
+        adicionaChaveServidor(i[0], i[1:])
     Arquivo.close()
     return
 
