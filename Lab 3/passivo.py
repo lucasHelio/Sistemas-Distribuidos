@@ -9,6 +9,26 @@ PORT = 5000 # porta de acesso
 
 from rpyc.utils.server import ForkingServer
 
+def arquivoEscrita():
+    Arquivo = open("dicionario.txt","w")
+    for x in Dicionario:
+        Arquivo.write(str(x.chave))
+        for y in x.valores:
+            Arquivo.write("*"+ str(y))
+        Arquivo.write("\n")
+            
+    Arquivo.close()
+    return
+
+def arquivoLeitura():
+    Arquivo = open("dicionario.txt", "r+")
+
+    x = Arquivo.read().splitlines()
+    for a in x:
+        i = a.split('*')
+        adicionaChaveServidor(i[0], i[1:])
+    Arquivo.close()
+    return
 
 Dicionario = []
 
