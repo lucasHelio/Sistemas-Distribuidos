@@ -14,7 +14,9 @@ def iniciaConexao():
 def switchcase(conn, entrada):
     if entrada == "1":
         ret = conn.root.exposed_listaPalavras()
-        print(ret)
+        print("\n")
+        for x in ret:
+            print(x)
         return
     
     if entrada == "2":
