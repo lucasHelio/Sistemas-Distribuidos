@@ -34,11 +34,6 @@ class Echo(rpyc.Service):
     
     def on_disconnect(sel, conn):
         print("Conexão finalizada")
-
-    def exposed_echo(self, msg):
-        pass
-        #ret = switchServ(msg)
-        #return ret
     
     def exposed_listaPalavras(self):
         palavras = " "
