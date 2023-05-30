@@ -23,13 +23,12 @@ def arquivoEscrita():
 
 def arquivoLeitura():
     Arquivo = open("dicionario.txt", "r+")
-
     x = Arquivo.read().splitlines()
     for a in x:
         i = a.split('*')
         x=1
         for x in i[1:]:
-            adicionaChaveServidor(i[0], x+"; ")
+            adicionaChaveServidor(i[0], x)
             
     Arquivo.close()
     return
@@ -67,6 +66,7 @@ class Dic(rpyc.Service):
         print("Conexão finalizada")
     
     def exposed_listaPalavras(self):
+        arquivoLeitura()
         palavras = []
         for x in Dicionario:
             palavras.append(x.chave)
@@ -75,6 +75,7 @@ class Dic(rpyc.Service):
 
     
     def exposed_printaChave(self, chave):
+        arquivoLeitura()
         for x in Dicionario:
             if chave == x.chave:
                 y = ("\nPalavra: "+ x.chave+ "\t\tDefinicao: ")
@@ -86,8 +87,10 @@ class Dic(rpyc.Service):
         return msg
     
     def exposed_adicionaChave(self, chave, valor):
+        arquivoLeitura()
         if not encontraChave(chave):
-            Dicionario.append(Palavra(chave, valor+"; "))   
+            Dicionario.append(Palavra(chave, valor+"; ")) 
+            arquivoEscrita()  
             msg = "\nPalavra adicionada com sucesso!\n"
         else:
             msg = "\nA palavra ja existe\n"
@@ -105,9 +108,6 @@ class Dic(rpyc.Service):
     def exposed_alteraValorChave(self, chave, idOldDef, novaDefinicao):
         Obj = encontraChave(chave)
         if Obj:
-            #y=''
-            #for x in Obj.valores:
-            #    y = y + str(Obj.valores.index(x))+ " - "+x+"*"
             valorN = idOldDef
             if Obj.valores[int(valorN)] != "":
                 Obj.valores.pop(int(valorN))
@@ -131,11 +131,11 @@ class Dic(rpyc.Service):
     
 
 
-if __name__ == "__main__":
-    arquivoLeitura()
-    srv = ForkingServer(Dic, port = PORT)
-    srv.start()
-    arquivoEscrita()
+
+#arquivoLeitura()
+srv = ForkingServer(Dic, port = PORT)
+srv.start()
+
     
 #passivo
 
@@ -162,13 +162,12 @@ def arquivoEscrita():
 
 def arquivoLeitura():
     Arquivo = open("dicionario.txt", "r+")
-
     x = Arquivo.read().splitlines()
     for a in x:
         i = a.split('*')
         x=1
         for x in i[1:]:
-            adicionaChaveServidor(i[0], x+"; ")
+            adicionaChaveServidor(i[0], x)
             
     Arquivo.close()
     return
@@ -206,6 +205,7 @@ class Dic(rpyc.Service):
         print("Conexão finalizada")
     
     def exposed_listaPalavras(self):
+        arquivoLeitura()
         palavras = []
         for x in Dicionario:
             palavras.append(x.chave)
@@ -214,6 +214,7 @@ class Dic(rpyc.Service):
 
     
     def exposed_printaChave(self, chave):
+        arquivoLeitura()
         for x in Dicionario:
             if chave == x.chave:
                 y = ("\nPalavra: "+ x.chave+ "\t\tDefinicao: ")
@@ -225,8 +226,10 @@ class Dic(rpyc.Service):
         return msg
     
     def exposed_adicionaChave(self, chave, valor):
+        arquivoLeitura()
         if not encontraChave(chave):
-            Dicionario.append(Palavra(chave, valor+"; "))   
+            Dicionario.append(Palavra(chave, valor+"; ")) 
+            arquivoEscrita()  
             msg = "\nPalavra adicionada com sucesso!\n"
         else:
             msg = "\nA palavra ja existe\n"
@@ -244,9 +247,6 @@ class Dic(rpyc.Service):
     def exposed_alteraValorChave(self, chave, idOldDef, novaDefinicao):
         Obj = encontraChave(chave)
         if Obj:
-            #y=''
-            #for x in Obj.valores:
-            #    y = y + str(Obj.valores.index(x))+ " - "+x+"*"
             valorN = idOldDef
             if Obj.valores[int(valorN)] != "":
                 Obj.valores.pop(int(valorN))
@@ -270,9 +270,9 @@ class Dic(rpyc.Service):
     
 
 
-if __name__ == "__main__":
-    arquivoLeitura()
-    srv = ForkingServer(Dic, port = PORT)
-    srv.start()
-    arquivoEscrita()
+
+#arquivoLeitura()
+srv = ForkingServer(Dic, port = PORT)
+srv.start()
+
     
