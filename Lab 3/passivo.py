@@ -30,6 +30,13 @@ def arquivoLeitura():
     Arquivo.close()
     return
 
+def adicionaChaveServidor(chave, valor):
+    if not encontraChave(chave):
+        Dicionario.append(Palavra(chave, valor))   
+        return
+    else:
+        return
+
 Dicionario = []
 
 class Palavra:
