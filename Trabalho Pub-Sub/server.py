@@ -7,6 +7,7 @@ PORTA = 10001
 
 LISTAID = []
 LISTATOPICOS = []
+BUFFERSIZE = 10
 
 """
 dicionario
@@ -29,7 +30,8 @@ LISTATOPICOS[topix].remove(inscrito)
 topico1:
     obj1:
         id: usuario
-        func: callback
+        --address: client_address
+        --func: callback
         listContent: Jogo
                      Autor
                      novo champ
@@ -42,6 +44,7 @@ topico1:
     
     obj2:
         id: j
+        address: client_address2
         func: callback
 
 
@@ -55,9 +58,9 @@ topico1:
 """
 
 class userFunc:
-    def __init__(self, id, callback):
+    def __init__(self, id):
         self.id = id
-        self.func = callback
+        #self.func = callback
         self.listContent = []
 
 
@@ -97,38 +100,64 @@ class BrokServ(BrokerService):
         client_address = self.client_addresses.pop(conn, None)
         if client_address is not None:
             print("Conexao finalizada:", client_address[0] + ":" + str(client_address[1]))
+            client_id = None
+            for id, values in LISTAID.items():
+                if values["client_address"] == client_address:
+                    client_id = id
+                    break
+            if client_id is not None:
+                del LISTAID[client_id]
 
 
     def create_topic(self, UserId, topicname):
         listaInscritos = []
         LISTATOPICOS[topicname] = listaInscritos
 
-    def exposed_login(self, id):
-        if id in LISTAID:
+    def exposed_login(self, id, callback):
+        """if id in LISTAID:
+            client_address = self.current_client_address
+            LISTAID[id] = {"callback": callback, "client_address": client_address}
+            return True"""
+        try:
+            client_address = self.current_client_address
+            LISTAID[id] = {"callback": callback, "client_address": client_address}
+            #chamar o FnNotify tambem
+            for topico in LISTATOPICOS:
+                if topico.id == id:
+                    if len(topico.listContent) > 0:
+                        func = LISTAID[topico.id]["callback"]
+                        func(topico.listContent) #Como fazer para o cliente rodar?
+                        topico.listContent.clear()
             return True
-        return False
-        #chamar o FnNotify tambem
+        
+        except:
+            return False
+
 
     def exposed_list_topics(self):
         return LISTATOPICOS.keys()
 
-    
+
     def exposed_publish(self, id, topic, data):
         novoPost = create_post(id, topic, data)
-        for x in LISTATOPICOS[topic]:
-            x.listContent.append(novoPost)
-            #pensar em como saber se o usuario recebeu o callback ou não
-
+        for topico in LISTATOPICOS[topic]:
+            topico.listContent.append(novoPost)
+            if(topico.id in LISTAID):
+                func = LISTAID[topico.id]["callback"]
+                func(topico.listContent) #Como fazer para o cliente rodar?
+                topico.listContent.clear()
+                
+        #pensar em como saber se o usuario recebeu o callback ou não
         #Agora buscar todos os inscritos e
         #chamar FnNotify para cada um inscrito com novoPost
-        pass
+        #pass
 
-    def exposed_subscribe_to(self, id, topic, callback):
+    def exposed_subscribe_to(self, id, topic):
         if topic in LISTATOPICOS:
             for x in LISTATOPICOS[topic]:
                 if id == x.id: return False
             
-            novoUser = userFunc(id, callback)
+            novoUser = userFunc(id)
             LISTATOPICOS[topic].append(novoUser)
             return True
         return False
