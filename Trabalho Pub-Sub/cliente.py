@@ -1,4 +1,5 @@
 import rpyc
+from interface import Content
 
 #endereco do servidor
 SERVER = 'localhost'
@@ -6,17 +7,23 @@ PORTA = 10001
 
 broker = rpyc.connect(SERVER, PORTA)
 
-def FnNotify():
-    pass
+def FnNotify(listOfContent):
+    for content in listOfContent:
+        print()
+        print("Autor:  " + content.author)
+        print("Topico: " +content.topic)
+        print(content.data)
+        print()
+    return None
 
 
 def realizarLogin():
     user = str(input("Insira seu user: "))
-    isLogged = broker.root.login(user)
+    isLogged = broker.root.login(user, FnNotify)
     if(isLogged):
         return user
     else:
-        return ""
+        return "Erro ao Logar"
 
 def fazRequisicoes(conn):
     user = realizarLogin()
@@ -46,7 +53,7 @@ def fazRequisicoes(conn):
         
         elif opcao == '3':
             topico = str(input("Inscrever-se no topico: "))
-            if (broker.root.subscribe_to(user, topico, FnNotify)): print("Inscricao Concluida")
+            if (broker.root.subscribe_to(user, topico)): print("Inscricao Concluida")
             else: print("Nao foi possivel realizar a inscricao")
             #callback
             #broker.root.subscribe_to(user, topico, callback)
