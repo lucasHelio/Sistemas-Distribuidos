@@ -1,93 +1,47 @@
+import os
+import pickle
 from interface import BrokerService, Content
 from rpyc.utils.server import ThreadedServer
-#import pickle
+from rpyc.utils.server import ForkingServer 
+import multiprocessing
 
+manager = multiprocessing.Manager()
 
 PORTA = 10001
-
-LISTAID = []
-LISTATOPICOS = []
 BUFFERSIZE = 10
 
-"""
-dicionario
--chave = topico
--valor = inscrito
 
-{topico1: eu, lucas, di,
- topico2: lucas
- topico3: 
- topicox: []}
+LISTACONECTADOS = {}
+LISTACONECTADOS = manager.dict()
 
-listavazia = []
-LISTATOPICOS[topix] = listavazia
-
-LISTATOPICOS[topix].append(inscrotp)
-
-LISTATOPICOS[topix].remove(inscrito)
-
-
-topico1:
-    obj1:
-        id: usuario
-        --address: client_address
-        --func: callback
-        listContent: Jogo
-                     Autor
-                     novo champ
-
-                     Esporte
-                     Autor 2
-                     Time venceu
-
-                     [max = 10]
-    
-    obj2:
-        id: j
-        address: client_address2
-        func: callback
-
-
-{topico1: obj1, obj2, obj3,
- topico2: obj5,
- topico3: 
- topicox: []}
-
-
-
+"""LISTACONECTADOS
+    key: id
+    value: client_address
 """
 
-class userFunc:
+LISTAIDCALLBACK = {}
+LISTAIDCALLBACK = manager.dict()
+
+"""LISTAIDCALLBACK
+    key: id
+    value: callback func
+"""
+
+LISTATOPICOS = {}
+LISTATOPICOS = manager.dict()
+
+"""LISTATOPICOS
+    key: topico
+    value: lista de objeto:
+           objeto contem: id
+                          lista de content
+"""
+
+class userListContent:
     def __init__(self, id):
         self.id = id
-        #self.func = callback
         self.listContent = []
 
-
-def escreveArquivo(Lista, arquivo):
-    f1 = open(str(arquivo) +".txt", "w")
-    f1.write(Lista)
-    f1.close()
-    return
-
-def lerArquivo(Lista, arquivo):
-    try:
-        f1 = open(arquivo+".txt", "r")
-        Lista = f1.read()
-        f1.close()
-    except FileNotFoundError:
-        # Arquivo não encontrado, cria um novo arquivo vazio
-        f1 = open(arquivo + ".txt", "a+")
-        f1.close()
-        Lista = ""  # Lista vazia
-    return Lista
-
-def create_post(id, topic, data):
-    novoPost = Content()
-    novoPost.author = id
-    novoPost.topic = topic
-    novoPost.data = data
-    return novoPost
 
 
 class BrokServ(BrokerService):
@@ -106,91 +60,138 @@ class BrokServ(BrokerService):
         client_address = self.client_addresses.pop(conn, None)
         if client_address is not None:
             print("Conexao finalizada:", client_address[0] + ":" + str(client_address[1]))
-            client_id = None
-            for id, values in LISTAID.items():
-                if values["client_address"] == client_address:
-                    client_id = id
-                    break
-            if client_id is not None:
-                del LISTAID[client_id]
+            for key, val in LISTACONECTADOS.items():
+                if val == client_address:
+                    del LISTACONECTADOS[key]
+                    print(LISTACONECTADOS)
 
-
+#---------------------------------------------------------
+    #Não sei chamar
     def create_topic(self, UserId, topicname):
         listaInscritos = []
         LISTATOPICOS[topicname] = listaInscritos
+#---------------------------------------------------------
 
     def exposed_login(self, id, callback):
-        """if id in LISTAID:
-            client_address = self.current_client_address
-            LISTAID[id] = {"callback": callback, "client_address": client_address}
-            return True"""
         try:
             client_address = self.current_client_address
-            LISTAID[id] = {"callback": callback, "client_address": client_address}
-            #chamar o FnNotify tambem
+            LISTACONECTADOS[id] = client_address
+            print(LISTACONECTADOS)
+
+            LISTAIDCALLBACK[id] = callback #, "client_address": client_address}
+            print(LISTAIDCALLBACK)
+
             for topico in LISTATOPICOS:
                 if topico.id == id:
                     if len(topico.listContent) > 0:
-                        func = LISTAID[topico.id]["callback"]
+                        func = LISTAIDCALLBACK[topico.id]#["callback"]
                         func(topico.listContent) #Como fazer para o cliente rodar?
-                        topico.listContent.clear()
+                        #topico.listContent.clear() #Ainda não limpar
+
             return True
         
         except:
             return False
 
-
     def exposed_list_topics(self):
         return LISTATOPICOS.keys()
 
-
-    def exposed_publish(self, id, topic, data):
-        novoPost = create_post(id, topic, data)
-        for topico in LISTATOPICOS[topic]:
-            topico.listContent.append(novoPost)
-            if(topico.id in LISTAID):
-                func = LISTAID[topico.id]["callback"]
-                func(topico.listContent) #Como fazer para o cliente rodar?
-                topico.listContent.clear()
-                
-        #pensar em como saber se o usuario recebeu o callback ou não
-        #Agora buscar todos os inscritos e
-        #chamar FnNotify para cada um inscrito com novoPost
-        #pass
+    def exposed_publish(self, id, topico, info):
+        try:
+            novoPost = Content(author=id, topic=topico, data=info)
+            for topico in LISTATOPICOS[topico]:
+                topico.listContent.append(novoPost)
+                if(topico.id in LISTAIDCALLBACK):
+                    func = LISTAIDCALLBACK[topico.id]#["callback"]
+                    func(topico.listContent) #Como fazer para o cliente rodar?
+                    #topico.listContent.clear() #Ainda não limpar
+            return True
+        except: return False        
 
     def exposed_subscribe_to(self, id, topic):
+
         if topic in LISTATOPICOS:
-            for x in LISTATOPICOS[topic]:
-                if id == x.id: return False
+
+            for obj in LISTATOPICOS[topic]:
+                if id == obj.id: return False
             
-            novoUser = userFunc(id)
-            LISTATOPICOS[topic].append(novoUser)
+            newUserSemContent = userListContent(id)
+
+            LISTATOPICOS[topic].append(newUserSemContent)
+
+            #for user in LISTATOPICOS[topic]:
+                #print(user.id)
+                #print(user.listContent)
+                #print('a')
+            
+            #user = LISTATOPICOS[topic][0]
+
+            #print(user.id)
+            #print(user.listContent)
+
             return True
+        
         return False
 
     def exposed_unsubscribe_to(self, id, topic):
         if topic in LISTATOPICOS:
-            for x in LISTATOPICOS[topic]:
-                if id == x.id: 
-                    LISTATOPICOS[topic].remove(x)
+            for obj in LISTATOPICOS[topic]:
+                if id == obj.id: 
+                    LISTATOPICOS[topic].remove(obj)
+                    print(LISTATOPICOS)
                     return True
         return False
-        
+
+
+
+#---------------------------------------------------------   
+def load(dictionary, nome):
+    #Tentamos carregar o dicionario de um arquivo novo
+    try: 
+        with open(str(nome)+'.pickle', 'rb') as f: 
+            loadDict = pickle.load(f)
+            print("Dicionario carregado")
+            dictionary.update(loadDict)
+
+    #Caso nao exista um arquivo, iniciamos o dicionario
+    except FileNotFoundError: 
+        print("Dicionario novo criado")
+
+def save(dictionary, nome):
+	with open(str(nome)+'.pickle', 'wb') as f: 
+		pickle.dump(dict(dictionary), f)
+		print("Dicionario salvo")
+	return
+#---------------------------------------------------------
 
 def main():
 
+    global LISTACONECTADOS
+    global LISTAIDCALLBACK
     global LISTATOPICOS 
-    global LISTAID
 
+    load(LISTATOPICOS, 'listaTopicos')
+
+    srv = ForkingServer(BrokServ, port=PORTA)
     
-    srv = ThreadedServer(BrokServ, port=PORTA)
-    lerArquivo(LISTATOPICOS, "Topicos")
-    lerArquivo(LISTATOPICOS, "Id")
-    
+ 
+    while True:
+        os.system('clear')
+        create_topic = input("Criar Topico? (s/n) ")
+        if create_topic == 's':
+            new_topic = input("Qual Topico? ")
+            LISTATOPICOS[new_topic] = []
+        else:
+            break
+
+    save(LISTATOPICOS, 'listaTopicos')
+
+    os.system('clear')
+    print("Comecando o Broker com os seguintes topicos:")
+    for topico in LISTATOPICOS: print(topico)
+    print('')
     srv.start()
 
-    escreveArquivo(LISTATOPICOS, "Topicos")
-    escreveArquivo(LISTAID, "Id")
-    
+
 
 main()
