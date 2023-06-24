@@ -71,9 +71,15 @@ def escreveArquivo(Lista, arquivo):
     return
 
 def lerArquivo(Lista, arquivo):
-    f1 = open(arquivo+"txt", "r")
-    Lista = f1.read()
-    f1.close()
+    try:
+        f1 = open(arquivo+".txt", "r")
+        Lista = f1.read()
+        f1.close()
+    except FileNotFoundError:
+        # Arquivo não encontrado, cria um novo arquivo vazio
+        f1 = open(arquivo + ".txt", "a+")
+        f1.close()
+        Lista = ""  # Lista vazia
     return Lista
 
 def create_post(id, topic, data):

@@ -5,7 +5,6 @@ from interface import Content
 SERVER = 'localhost'
 PORTA = 10001
 
-broker = rpyc.connect(SERVER, PORTA)
 
 def FnNotify(listOfContent):
     for content in listOfContent:
@@ -19,7 +18,7 @@ def FnNotify(listOfContent):
 
 def realizarLogin():
     user = str(input("Insira seu user: "))
-    isLogged = broker.root.login(user, FnNotify)
+    isLogged = conn.root.login(user, FnNotify)
     if(isLogged):
         return user
     else:
@@ -41,26 +40,26 @@ def fazRequisicoes(conn):
         if opcao == "0": break
         
         if opcao == '1':
-            broker.root.list_topics()
+            conn.root.list_topics()
         
         elif opcao == '2':
             topico = str(input("Topico da publicacao: "))
             data = str(input("Insira o conteudo do topico:"))
-            if(broker.root.publish(user, topico, data)):
+            if(conn.root.publish(user, topico, data)):
                 print("Publicado")
             else:
                 print("Erro ao publicar")
         
         elif opcao == '3':
             topico = str(input("Inscrever-se no topico: "))
-            if (broker.root.subscribe_to(user, topico)): print("Inscricao Concluida")
+            if (conn.root.subscribe_to(user, topico)): print("Inscricao Concluida")
             else: print("Nao foi possivel realizar a inscricao")
             #callback
             #broker.root.subscribe_to(user, topico, callback)
         
         elif opcao == '4':
             topico = str(input("Deseja se desinscrever de qual topico? "))
-            if(broker.root.unsubscribe_to(user, topico)):
+            if(conn.root.unsubscribe_to(user, topico)):
                 print("Desinscrito do topico " + topico+" com sucesso!")
             else:
                 print("Nao foi possivel desincrever-se do topico "+topico+
@@ -70,10 +69,11 @@ def fazRequisicoes(conn):
 
 def iniciaConexao():
     conn = rpyc.connect(SERVER, PORTA)
-    print(conn.root.get_service_name())
+    #print(conn.root.get_service_name())
     return conn
 
 def main():
+    global conn
     conn = iniciaConexao()
     fazRequisicoes(conn)
     conn.close()
