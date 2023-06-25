@@ -1,47 +1,36 @@
 import os
 import pickle
+import rpyc
 from interface import BrokerService, Content
 from rpyc.utils.server import ThreadedServer
-from rpyc.utils.server import ForkingServer 
-import multiprocessing
 
-manager = multiprocessing.Manager()
 
 PORTA = 10001
 BUFFERSIZE = 10
 
 
-LISTACONECTADOS = {}
-LISTACONECTADOS = manager.dict()
+DICTCONECTADOS = {}
 
-"""LISTACONECTADOS
+"""DICTCONECTADOS
     key: id
     value: client_address
 """
 
-LISTAIDCALLBACK = {}
-LISTAIDCALLBACK = manager.dict()
+DICTIDCALLBACK = {}
 
-"""LISTAIDCALLBACK
+"""DICTIDCALLBACK
     key: id
     value: callback func
 """
 
-LISTATOPICOS = {}
-LISTATOPICOS = manager.dict()
+DICTTOPIC = {}
 
-"""LISTATOPICOS
+"""DICTTOPIC
     key: topico
-    value: lista de objeto:
-           objeto contem: id
-                          lista de content
+    value: lista de dict:
+                        key: id
+                        value: listContent
 """
-
-class userListContent:
-    def __init__(self, id):
-        self.id = id
-        self.listContent = []
-
 
 
 class BrokServ(BrokerService):
@@ -60,100 +49,104 @@ class BrokServ(BrokerService):
         client_address = self.client_addresses.pop(conn, None)
         if client_address is not None:
             print("Conexao finalizada:", client_address[0] + ":" + str(client_address[1]))
-            for key, val in LISTACONECTADOS.items():
+            for key, val in DICTCONECTADOS.items():
                 if val == client_address:
-                    del LISTACONECTADOS[key]
-                    print(LISTACONECTADOS)
+                    user = key
+            del DICTCONECTADOS[user]
+            print(DICTCONECTADOS)
 
 #---------------------------------------------------------
     #Não sei chamar
+    #Não sei nem se será relevante
     def create_topic(self, UserId, topicname):
         listaInscritos = []
-        LISTATOPICOS[topicname] = listaInscritos
+        DICTTOPIC[topicname] = listaInscritos
 #---------------------------------------------------------
 
     def exposed_login(self, id, callback):
         try:
             client_address = self.current_client_address
-            LISTACONECTADOS[id] = client_address
-            print(LISTACONECTADOS)
+            DICTCONECTADOS[id] = client_address
+            DICTIDCALLBACK[id] = rpyc.async_(callback)
 
-            LISTAIDCALLBACK[id] = callback #, "client_address": client_address}
-            print(LISTAIDCALLBACK)
-
-            for topico in LISTATOPICOS:
-                if topico.id == id:
-                    if len(topico.listContent) > 0:
-                        func = LISTAIDCALLBACK[topico.id]#["callback"]
-                        func(topico.listContent) #Como fazer para o cliente rodar?
-                        #topico.listContent.clear() #Ainda não limpar
+            for topico in DICTTOPIC:
+                if id in DICTTOPIC[topico]:
+  
+                    callback(DICTTOPIC[topico][id]) 
+                    dictUser = DICTTOPIC[topico]
+                    dictUser[id].clear() 
+                    DICTTOPIC[topico] = dictUser
 
             return True
         
-        except:
+        except Exception as error:
+            print(error)
             return False
 
+
     def exposed_list_topics(self):
-        return LISTATOPICOS.keys()
+        return DICTTOPIC.keys()
+    
+
 
     def exposed_publish(self, id, topico, info):
         try:
             novoPost = Content(author=id, topic=topico, data=info)
-            for topico in LISTATOPICOS[topico]:
-                topico.listContent.append(novoPost)
-                if(topico.id in LISTAIDCALLBACK):
-                    func = LISTAIDCALLBACK[topico.id]#["callback"]
-                    func(topico.listContent) #Como fazer para o cliente rodar?
-                    #topico.listContent.clear() #Ainda não limpar
+            for user in DICTTOPIC[topico]:
+                if(user in DICTCONECTADOS):
+                    func = DICTIDCALLBACK[user]
+
+                    func([novoPost]) 
+                else: 
+                    dictUser = DICTTOPIC[topico]
+                    dictUser[user].append(novoPost)
+                    DICTTOPIC[topico] = dictUser
+
+            
             return True
-        except: return False        
+        except Exception as error:
+            print(error)
+            return False        
+
+
 
     def exposed_subscribe_to(self, id, topic):
 
-        if topic in LISTATOPICOS:
+        if topic in DICTTOPIC:
 
-            for obj in LISTATOPICOS[topic]:
-                if id == obj.id: return False
-            
-            newUserSemContent = userListContent(id)
+            for userContent in DICTTOPIC[topic]:
+                if id == userContent: return False
 
-            LISTATOPICOS[topic].append(newUserSemContent)
+            dictUser = DICTTOPIC[topic]
+            dictUser.update({id:[]})
+            DICTTOPIC[topic] = dictUser
 
-            #for user in LISTATOPICOS[topic]:
-                #print(user.id)
-                #print(user.listContent)
-                #print('a')
-            
-            #user = LISTATOPICOS[topic][0]
-
-            #print(user.id)
-            #print(user.listContent)
 
             return True
         
         return False
 
     def exposed_unsubscribe_to(self, id, topic):
-        if topic in LISTATOPICOS:
-            for obj in LISTATOPICOS[topic]:
-                if id == obj.id: 
-                    LISTATOPICOS[topic].remove(obj)
-                    print(LISTATOPICOS)
-                    return True
+        try:
+            if topic in DICTTOPIC:
+                dictUser = DICTTOPIC[topic]
+                del dictUser[id]
+                DICTTOPIC[topic] = dictUser
+    
+                return True
+        except KeyError:
+            print('Algo deu errado')
         return False
 
 
 
 #---------------------------------------------------------   
 def load(dictionary, nome):
-    #Tentamos carregar o dicionario de um arquivo novo
     try: 
         with open(str(nome)+'.pickle', 'rb') as f: 
             loadDict = pickle.load(f)
             print("Dicionario carregado")
             dictionary.update(loadDict)
-
-    #Caso nao exista um arquivo, iniciamos o dicionario
     except FileNotFoundError: 
         print("Dicionario novo criado")
 
@@ -166,13 +159,13 @@ def save(dictionary, nome):
 
 def main():
 
-    global LISTACONECTADOS
-    global LISTAIDCALLBACK
-    global LISTATOPICOS 
+    global DICTCONECTADOS
+    global DICTIDCALLBACK
+    global DICTTOPIC 
 
-    load(LISTATOPICOS, 'listaTopicos')
+    load(DICTTOPIC, 'DICTTOPIC')
 
-    srv = ForkingServer(BrokServ, port=PORTA)
+    srv = ThreadedServer(BrokServ, port=PORTA, protocol_config={'allow_public_attrs':True})
     
  
     while True:
@@ -180,18 +173,27 @@ def main():
         create_topic = input("Criar Topico? (s/n) ")
         if create_topic == 's':
             new_topic = input("Qual Topico? ")
-            LISTATOPICOS[new_topic] = []
+            DICTTOPIC[new_topic] = dict()
         else:
             break
 
-    save(LISTATOPICOS, 'listaTopicos')
+    
 
     os.system('clear')
     print("Comecando o Broker com os seguintes topicos:")
-    for topico in LISTATOPICOS: print(topico)
-    print('')
-    srv.start()
+    for topico in DICTTOPIC: print(topico)
+    
+    try:
+        srv.start()
+    
+    #Não consegui salvar o dict num keyboard interrupt
+    except KeyboardInterrupt:
+        save(DICTTOPIC, 'DICTTOPIC')
+        srv.close()
+    except Exception as error:
+        print(error)
+        srv.close()
+        save(DICTTOPIC, 'DICTTOPIC')
 
-
-
-main()
+if __name__ == "__main__":
+    main()
