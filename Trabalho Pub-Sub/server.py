@@ -9,7 +9,7 @@ from threading import Thread
 
 
 PORTA = 10001
-BUFFERSIZE = 10
+BUFFERSIZE = 3
 
 
 class Usuario:
@@ -19,7 +19,7 @@ class Usuario:
     
 
 def adicionaPost(listaPost, post):
-    if len(listaPost) <10:
+    if len(listaPost) <BUFFERSIZE:
         listaPost.append(post)
     else:
         listaPost.pop(0)
@@ -31,11 +31,6 @@ def removePrimeiroPost(listaPost):
     return
 
 
-
-DICTUSERTOP = []
-'''DICTUSERTOP
-    Usuario user:
-'''
 
 DICTCONECTADOS = {}
 
@@ -93,18 +88,40 @@ class BrokServ(BrokerService):
             client_address = self.current_client_address
             DICTCONECTADOS[id] = client_address
             DICTIDCALLBACK[id] = rpyc.async_(callback)
-            for usuario in DICTUSERTOP:
-                if id == usuario.nome:
-                    listatemporaria = []
-                    while len(usuario.posts)!= 0:
-                        listatemporaria.append(usuario.posts[0])
-                        removePrimeiroPost(usuario.posts)
-                    callback(listatemporaria)
-                return True
-            
-            novoUsuario = Usuario(id)
-            DICTUSERTOP.append(novoUsuario)
+
+            for topico in DICTTOPIC:
+                if id in DICTTOPIC[topico]:
+  
+                    callback(DICTTOPIC[topico][id]) 
+                    dictUser = DICTTOPIC[topico]
+                    dictUser[id].clear() 
+                    DICTTOPIC[topico] = dictUser
+
+                """os.system('clear')
+                for topic in DICTTOPIC:
+                    print('Topico: ' + topic)
+                    print("")
+                    for user in DICTTOPIC[topic]:
+                        print('Usuario: ' + user)
+                        for content in DICTTOPIC[topic][user]:
+                            print("")
+                            print("Author: "+content.author)
+                            print("Topico: "+content.topic)
+                            print("Data: "+content.data)
+                            print()
+                            print("---------")
+                            print()
+                        print()
+                        print("--------")
+                        print()
+                    print()
+                    print("--------")
+                    print()"""
+
+
             return True
+        
+
         
         except Exception as error:
             print(error)
@@ -113,27 +130,54 @@ class BrokServ(BrokerService):
 
     def exposed_list_topics(self):
         return DICTTOPIC.keys()
+    
+
 
     def exposed_publish(self, id, topico, info):
         try:
-            novoPost = Content(author=id, topic=topico, data=info)
+            if topico not in DICTTOPIC: 
+                print("Topico nao existe")
+                return False
+            else:
+                novoPost = Content(author=id, topic=topico, data=info)
+                
+                for user in DICTTOPIC[topico]:
+                    if(user in DICTCONECTADOS):
+                        func = DICTIDCALLBACK[user]
 
-            for user in DICTTOPIC[topico]:
-                if(user in DICTCONECTADOS):
-                    func = DICTIDCALLBACK[user]
-                    func([novoPost])
-                else:     
-                    for usuario in DICTUSERTOP:
-                        if usuario.nome == user:
-                            adicionaPost(usuario.posts, novoPost)
+                        func([novoPost]) 
+                    else: 
+                        dictUser = DICTTOPIC[topico]
+                        if(len(dictUser[user])>=BUFFERSIZE): dictUser[user].pop(0)
+                        dictUser[user].append(novoPost)
+                        DICTTOPIC[topico] = dictUser
 
-                    dictUser = DICTTOPIC[topico]
-                    dictUser[user].append(novoPost)
-                    DICTTOPIC[topico] = dictUser
+
+            """os.system('clear')
+            for topic in DICTTOPIC:
+                print('Topico: ' + topic)
+                print("")
+                for user in DICTTOPIC[topic]:
+                    print('Usuario: ' + user)
+                    for content in DICTTOPIC[topic][user]:
+                        print("")
+                        print("Author: "+content.author)
+                        print("Topico: "+content.topic)
+                        print("Data: "+content.data)
+                        print()
+                        print("---------")
+                        print()
+                    print()
+                    print("--------")
+                    print()
+                print()
+                print("--------")
+                print()"""
+
             return True
-        
+            
         except Exception as error:
-            print("ERRO - Tópico "+ error+" inserido não existe")
+            print(error)
             return False        
 
 
@@ -141,18 +185,17 @@ class BrokServ(BrokerService):
     def exposed_subscribe_to(self, id, topic):
 
         if topic in DICTTOPIC:
-
             for userContent in DICTTOPIC[topic]:
                 if id == userContent: return False
-
             dictUser = DICTTOPIC[topic]
             dictUser.update({id:[]})
             DICTTOPIC[topic] = dictUser
-
-
             return True
         
-        return False
+        else:
+            #print('Topico nao existe')
+            return False
+        
 
     def exposed_unsubscribe_to(self, id, topic):
         try:
@@ -160,8 +203,10 @@ class BrokServ(BrokerService):
                 dictUser = DICTTOPIC[topic]
                 del dictUser[id]
                 DICTTOPIC[topic] = dictUser
-    
                 return True
+            else: 
+                #print('Topico nao existe')
+                return False
         except KeyError:
             print('Algo deu errado')
         return False
@@ -187,6 +232,8 @@ def save(dictionary, nome):
 def save_on_exit():
     save(DICTTOPIC, 'DICTTOPIC')
 #---------------------------------------------------------
+
+
 
 def selecionar_opcao(srv):
     while True:
@@ -217,6 +264,7 @@ def selecionar_opcao(srv):
             print("Interrompendo servidor...")
             srv.close()
             break
+
 
 def main():
 

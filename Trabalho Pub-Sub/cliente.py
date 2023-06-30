@@ -7,6 +7,7 @@ PORTA = 10001
 user = ''
 
 def printLC(listOfContent):
+    print()
     for content in listOfContent:
         print()
         print("Autor:  " + content.author)
